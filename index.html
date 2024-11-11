@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maritime Merchants</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-interface">
+        <h1>Maritime Merchants</h1>
+        <div id="status">
+            <div id="location">Location: Portugal</div>
+            <div id="coins">Coins: 100</div>
+            <div id="current-ship">Current Ship: Galleon</div>
+            <div id="inventory">Inventory: Empty</div>
+        </div>
+        <button onclick="showMarketPricesPopup()">View Market Prices</button>
+        <button onclick="travel()">Travel</button>
+        <button onclick="trade()">Trade</button>
+        <button onclick="exitGame()">Exit</button>
+        <div id="output"></div>
+    </div>
+
+    <!-- Feed Section -->
+    <div id="feed-section">
+        <h2>Action Feed</h2>
+        <ul id="action-feed"></ul>
+    </div>
+
+    <!-- Market Prices Modal -->
+    <div id="market-prices-modal" style="display:none;">
+        <div class="modal-content">
+            <span onclick="closeMarketPricesPopup()" class="close">&times;</span>
+            <h2>Market Prices</h2>
+            <div id="all-market-prices"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
