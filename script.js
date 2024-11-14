@@ -1,4 +1,4 @@
-let coins = 100;
+let coins = 1000;
 let currentShip = "Galleon";
 let inventory = [];
 let currentLocation = "Portugal";
@@ -135,6 +135,66 @@ const travelCosts = {
     }
 };
 
+const ships = {
+    "Galleon": {
+        "cost": 0,
+        "capacity": 5
+    },
+    "Carrack": {
+        "cost": 150,
+        "capacity": 10
+    },
+    "Caravel": {
+        "cost": 300,
+        "capacity": 15
+    },
+    "Fluyt": {
+        "cost": 500,
+        "capacity": 25
+    }
+};
+
+function displayShipUpgrades() {
+    const shipUpgradesList = document.getElementById("shipUpgradesList");
+    shipUpgradesList.innerHTML = '';
+    
+    for (let ship in ships) {
+        if (ship !== currentShip) {
+            const li = document.createElement("li");
+            li.textContent = `${ship} - Cost: ${ships[ship].cost} coins, Capacity: ${ships[ship].capacity} goods`;
+            shipUpgradesList.appendChild(li);
+        }
+    }
+}
+
+function handleShipUpgrade() {
+    const upgradeMessage = document.getElementById("upgradeMessage");
+    const upgradeCost = ships[currentShip].cost;
+    const upgradeButton = document.getElementById("upgradeButton");
+
+    const shipNames = Object.keys(ships);
+    const currentShipIndex = shipNames.indexOf(currentShip);
+
+    if (currentShipIndex < shipNames.length - 1) {
+        const nextShip = shipNames[currentShipIndex + 1];
+        const nextShipCost = ships[nextShip].cost;
+
+        if (currentCoins >= nextShipCost) {
+            currentCoins -= nextShipCost;
+            currentShip = nextShip;
+            document.getElementById("currentShipName").textContent = currentShip;
+            document.getElementById("currentShipCapacity").textContent = ships[currentShip].capacity;
+
+            upgradeMessage.textContent = `Successfully upgraded to a ${currentShip}!`;
+            displayShipUpgrades();
+        } else {
+            upgradeMessage.textContent = `You don't have enough coins to upgrade to ${nextShip}.`;
+        }
+    } else {
+        upgradeMessage.textContent = "You already have the best ship!";
+    }
+}
+
 function logAction(action) {
     const feed = document.getElementById('action-feed');
     const newAction = document.createElement('li');
@@ -150,16 +210,16 @@ function updateStatus() {
     document.getElementById('inventory').innerText = `Inventory: ${inventory.length ? inventory.join(', ') : 'Empty'}`;
 }
 
-// show buy options
+// Show buy options based on location and available prices
 function updateBuyOptions() {
     const buyItemSelect = document.getElementById('buy-item');
     const availableItems = Object.keys(goodsPrices[currentLocation]);
 
-    buyItemSelect.innerHTML = ''; // clear existing options
+    buyItemSelect.innerHTML = ''; // Clear existing options
 
     availableItems.forEach(item => {
         const price = goodsPrices[currentLocation][item].buy;
-        if (price !== null) {
+        if (price !== null && price > 0) { // Only show items with a valid buy price
             const option = document.createElement('option');
             option.value = item;
             option.innerText = `${item} (Buy: ${price} coins)`;
@@ -172,70 +232,84 @@ function updateBuyOptions() {
     }
 }
 
-// show sell options
+// Show sell options based on inventory
 function updateSellOptions() {
     const sellItemSelect = document.getElementById('sell-item');
-    
-    sellItemSelect.innerHTML = ''; // clear existing options
+    sellItemSelect.innerHTML = ''; // Clear existing options
 
-    inventory.forEach(item => {
+    // set of distinct items from the inventory
+    const distinctItems = [...new Set(inventory)];
+
+    distinctItems.forEach(item => {
         const option = document.createElement('option');
         option.value = item;
         option.innerText = `${item}`;
         sellItemSelect.appendChild(option);
     });
-
-    // If no items to sell, notify the player
+    
     if (sellItemSelect.options.length === 0) {
         sellItemSelect.innerHTML = `<option disabled>No items in inventory to sell</option>`;
     }
 }
 
-// buy goods based on selected item and amount
 function buyGoods() {
     const buyItem = document.getElementById('buy-item').value;
     const buyAmount = parseInt(document.getElementById('buy-amount').value, 10);
-    
-    if (!buyItem || isNaN(buyAmount) || buyAmount <= 0) return;
+    const previewDiv = document.getElementById('buy-preview');
 
     const itemPrice = goodsPrices[currentLocation][buyItem].buy;
-    if (itemPrice !== null && coins >= itemPrice * buyAmount) {
-        coins -= itemPrice * buyAmount;
-        for (let i = 0; i < buyAmount; i++) {
-            inventory.push(buyItem);
-        }
-        logAction(`Bought ${buyAmount} ${buyItem}(s) for ${itemPrice * buyAmount} coins.`);
-        updateStatus();
+    const totalCost = itemPrice * buyAmount;
+
+    if (itemPrice !== null && coins >= totalCost) {
+        previewDiv.innerHTML = `Preview: You are about to buy ${buyAmount} ${buyItem}(s) for a total of ${totalCost} coins.`;
+        document.getElementById('buy-button').onclick = function() {
+            coins -= totalCost;
+            for (let i = 0; i < buyAmount; i++) {
+                inventory.push(buyItem);
+            }
+            logAction(`Bought ${buyAmount} ${buyItem}(s) for ${totalCost} coins.`);
+            previewDiv.innerHTML = ``;
+            document.getElementById('buy-item').value = ``;
+            document.getElementById('buy-amount').value = ``;
+            updateSellOptions();
+            updateStatus();
+        };
     } else {
-        logAction(`Not enough coins to buy ${buyAmount} ${buyItem}(s).`);
+        previewDiv.innerHTML = `Not enough coins to buy ${buyAmount} ${buyItem}(s).`;
     }
 }
 
-// sell goods based on selected item and amount
 function sellGoods() {
     const sellItem = document.getElementById('sell-item').value;
     const sellAmount = parseInt(document.getElementById('sell-amount').value, 10);
-    
-    if (!sellItem || isNaN(sellAmount) || sellAmount <= 0) return;
+    const previewDiv = document.getElementById('sell-preview');
 
     const itemPrice = goodsPrices[currentLocation][sellItem].sell;
     if (itemPrice !== null && inventory.includes(sellItem)) {
         const itemCount = inventory.filter(item => item === sellItem).length;
-        
+
         if (itemCount >= sellAmount) {
-            for (let i = 0; i < sellAmount; i++) {
-                inventory.splice(inventory.indexOf(sellItem), 1);
-            }
-            coins += itemPrice * sellAmount;
-            logAction(`Sold ${sellAmount} ${sellItem}(s) for ${itemPrice * sellAmount} coins.`);
-            updateStatus();
+            const totalSell = itemPrice * sellAmount;
+            previewDiv.innerHTML = `Preview: You are about to sell ${sellAmount} ${sellItem}(s) for a total of ${totalSell} coins.`;
+            document.getElementById('sell-button').onclick = function() {
+                for (let i = 0; i < sellAmount; i++) {
+                    inventory.splice(inventory.indexOf(sellItem), 1); // remove sold items from inventory
+                }
+                coins += totalSell;
+                logAction(`Sold ${sellAmount} ${sellItem}(s) for ${totalSell} coins.`);
+                previewDiv.innerHTML = ``;
+                document.getElementById('sell-item').value = ``;
+                document.getElementById('sell-amount').value = ``;
+                updateStatus();
+            };
         } else {
-            logAction(`Not enough ${sellItem}(s) to sell.`);
+            previewDiv.innerHTML = `Not enough ${sellItem}(s) to sell.`;
         }
     } else {
-        logAction(`Cannot sell ${sellItem} at this location.`);
+        previewDiv.innerHTML = `Cannot sell ${sellItem} at this location.`;
     }
 }
+
 
 // Tab switching functionality
 document.getElementById("buy-tab").addEventListener('click', function() {
@@ -250,16 +324,22 @@ document.getElementById("travel-tab").addEventListener('click', function() {
     switchTab("travel");
 });
 
+document.getElementById("ship-upgrade-tab").addEventListener('click', function() {
+    switchTab("shipUpgrade");
+});
+
 function switchTab(tab) {
     // hide all sections
     document.getElementById("buy-section").style.display = "none";
     document.getElementById("sell-section").style.display = "none";
     document.getElementById("travel-section").style.display = "none";
+    document.getElementById("shipUpgrade-section").style.display = "none";
     
     // remove active class from all tabs
     document.getElementById("buy-tab").classList.remove('active');
     document.getElementById("sell-tab").classList.remove('active');
     document.getElementById("travel-tab").classList.remove('active');
+    document.getElementById("ship-upgrade-tab").classList.remove('active');
     
     // show the selected section and add active class to the selected tab
     if (tab === "buy") {
@@ -271,25 +351,40 @@ function switchTab(tab) {
     } else if (tab === "travel") {
         document.getElementById("travel-section").style.display = "block";
         document.getElementById("travel-tab").classList.add('active');
+    } else if (tab === "shipUpgrade") {
+        document.getElementById("shipUpgrade-section").style.display = "block";
+        document.getElementById("ship-upgrade-tab").classList.add('active');
     }
 }
+
+document.getElementById("upgradeButton").addEventListener("click", handleShipUpgrade);
+
+document.getElementById("buy-button").addEventListener('click', function() {
+    buyGoods();
+});
+
+document.getElementById("sell-button").addEventListener('click', function() {
+    sellGoods();
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     // hide all sections in beginning
     document.getElementById('buy-section').style.display = 'none';
     document.getElementById('sell-section').style.display = 'none';
     document.getElementById('travel-section').style.display = 'none';
+    document.getElementById('shipUpgrade-section').style.display = 'none';
     document.getElementById('buy-tab').classList.remove('active');
     document.getElementById('sell-tab').classList.remove('active');
     document.getElementById('travel-tab').classList.remove('active');
+    document.getElementById('ship-upgrade-tab').classList.remove('active');
 });
+
 
 // show all market prices in a popup
 function showMarketPricesPopup() {
     const modal = document.getElementById("market-prices-modal");
     const allPricesContainer = document.getElementById('all-market-prices');
     
-    // market prices tables grouped by item
     allPricesContainer.innerHTML = buildMarketPricesTables();
     modal.style.display = "block";
 }
@@ -303,7 +398,7 @@ function closeMarketPricesPopup() {
 // build market prices tables grouped by item
 function buildMarketPricesTables() {
     let itemTablesHTML = '';
-    const items = ["Textiles", "Spices", "Gold", "Ivory", "Nutmeg", "Silver", "Gunpowder", "Sugar"]; // List of items to display
+    const items = ["Textiles", "Spices", "Gold", "Ivory", "Nutmeg", "Silver", "Gunpowder", "Sugar"];
 
     items.forEach(item => {
         itemTablesHTML += `<h3>${item}</h3><table><thead><tr><th>Location</th><th>Buy Price</th><th>Sell Price</th></tr></thead><tbody>`;
@@ -356,19 +451,39 @@ function travelToDestination() {
         logAction(`Traveled from ${currentLocation} to ${destination} for ${travelCost} coins.`);
         currentLocation = destination;
         updateStatus();
+        updateBuyOptions();
         updateTravelOptions()
     } else {
         alert('Invalid location.');
     }
 }
 
-// update top area
+// update the UI status
 function updateStatus() {
     document.getElementById('coins').innerText = `Coins: ${coins}`;
-    document.getElementById('current-ship').innerText = `Current Ship: ${currentShip}`;
     document.getElementById('current-location').innerText = `Current Location: ${currentLocation}`;
-    document.getElementById('inventory').innerText = `Inventory: ${inventory.join(', ')}`;
+    document.getElementById('current-location').innerText = `Current Location: ${currentLocation}`;
+
+    // count occurrences of each item in the inventory and create a string to display
+    let inventoryDisplay = "Inventory: ";
+    const inventoryCounts = {};
+
+    // count items in inventory
+    inventory.forEach(item => {
+        inventoryCounts[item] = (inventoryCounts[item] || 0) + 1;
+    });
+
+    // display string for the inventory
+    const distinctItems = Object.keys(inventoryCounts);
+    if (distinctItems.length > 0) {
+        inventoryDisplay += distinctItems.map(item => `${item} x${inventoryCounts[item]}`).join(', ');
+    } else {
+        inventoryDisplay += "Empty";
+    }
+
+    document.getElementById('inventory').innerText = inventoryDisplay;
 }
+
 
 // log actions to the feed
 function logAction(action) {
@@ -383,4 +498,5 @@ updateStatus();
 updateTravelOptions();
 updateBuyOptions();
 updateSellOptions();
+displayShipUpgrades();
 showTab('buy');
