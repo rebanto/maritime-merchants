@@ -135,17 +135,18 @@ const travelCosts = {
     }
 };
 
-// log actions to the feed
 function logAction(action) {
     const feed = document.getElementById('action-feed');
     const newAction = document.createElement('li');
     newAction.innerText = action;
-    feed.appendChild(newAction);
+    feed.insertBefore(newAction, feed.firstChild); // add at top
 }
+
 
 // update the UI status
 function updateStatus() {
     document.getElementById('coins').innerText = `Coins: ${coins}`;
+    document.getElementById('current-location').innerText = `Current Location: ${currentLocation}`;
     document.getElementById('inventory').innerText = `Inventory: ${inventory.length ? inventory.join(', ') : 'Empty'}`;
 }
 
@@ -166,7 +167,6 @@ function updateBuyOptions() {
         }
     });
 
-    // If no options are available, notify the player
     if (buyItemSelect.options.length === 0) {
         buyItemSelect.innerHTML = `<option disabled>No goods available to buy</option>`;
     }
@@ -200,7 +200,6 @@ function buyGoods() {
 
     const itemPrice = goodsPrices[currentLocation][buyItem].buy;
     if (itemPrice !== null && coins >= itemPrice * buyAmount) {
-        // Deduct coins and add to inventory
         coins -= itemPrice * buyAmount;
         for (let i = 0; i < buyAmount; i++) {
             inventory.push(buyItem);
@@ -224,7 +223,6 @@ function sellGoods() {
         const itemCount = inventory.filter(item => item === sellItem).length;
         
         if (itemCount >= sellAmount) {
-            // Remove from inventory and add coins
             for (let i = 0; i < sellAmount; i++) {
                 inventory.splice(inventory.indexOf(sellItem), 1);
             }
@@ -239,39 +237,52 @@ function sellGoods() {
     }
 }
 
-// event listeners for button clicks
-document.getElementById("buy-button").addEventListener('click', buyGoods);
-document.getElementById("sell-button").addEventListener('click', sellGoods);
-
 // Tab switching functionality
 document.getElementById("buy-tab").addEventListener('click', function() {
-    document.getElementById("buy-section").style.display = "block";
-    document.getElementById("sell-section").style.display = "none";
-    document.getElementById("buy-tab").classList.add('active');
-    document.getElementById("sell-tab").classList.remove('active');
+    switchTab("buy");
 });
 
 document.getElementById("sell-tab").addEventListener('click', function() {
-    document.getElementById("buy-section").style.display = "none";
-    document.getElementById("sell-section").style.display = "block";
-    document.getElementById("sell-tab").classList.add('active');
-    document.getElementById("buy-tab").classList.remove('active');
+    switchTab("sell");
 });
 
-// travel between locations
-function travel() {
-    const output = document.getElementById('output');
-    const previousLocation = currentLocation;
-    currentLocation = (currentLocation === "Portugal") ? "West Africa" : "Portugal"; // For simplicity, toggling locations for now
-    output.innerText = `You have traveled to ${currentLocation}.`;
-    logAction(`Traveled from ${previousLocation} to ${currentLocation}.`);
+document.getElementById("travel-tab").addEventListener('click', function() {
+    switchTab("travel");
+});
 
-    // Update the UI to reflect the new location
-    document.getElementById('current-location').innerText = `Current Location: ${currentLocation}`;
-
-    updateStatus();
+function switchTab(tab) {
+    // hide all sections
+    document.getElementById("buy-section").style.display = "none";
+    document.getElementById("sell-section").style.display = "none";
+    document.getElementById("travel-section").style.display = "none";
+    
+    // remove active class from all tabs
+    document.getElementById("buy-tab").classList.remove('active');
+    document.getElementById("sell-tab").classList.remove('active');
+    document.getElementById("travel-tab").classList.remove('active');
+    
+    // show the selected section and add active class to the selected tab
+    if (tab === "buy") {
+        document.getElementById("buy-section").style.display = "block";
+        document.getElementById("buy-tab").classList.add('active');
+    } else if (tab === "sell") {
+        document.getElementById("sell-section").style.display = "block";
+        document.getElementById("sell-tab").classList.add('active');
+    } else if (tab === "travel") {
+        document.getElementById("travel-section").style.display = "block";
+        document.getElementById("travel-tab").classList.add('active');
+    }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    // hide all sections in beginning
+    document.getElementById('buy-section').style.display = 'none';
+    document.getElementById('sell-section').style.display = 'none';
+    document.getElementById('travel-section').style.display = 'none';
+    document.getElementById('buy-tab').classList.remove('active');
+    document.getElementById('sell-tab').classList.remove('active');
+    document.getElementById('travel-tab').classList.remove('active');
+});
 
 // show all market prices in a popup
 function showMarketPricesPopup() {
@@ -314,74 +325,62 @@ function buildMarketPricesTables() {
     return itemTablesHTML;
 }
 
-// Update the UI with the travel options based on current location
+// update the travel destinations based on the current location
 function updateTravelOptions() {
-    const travelSelect = document.getElementById('travel-destination');
-    const availableDestinations = Object.keys(travelCosts[currentLocation]);
+    const travelDestinationSelect = document.getElementById('travel-destination');
+    travelDestinationSelect.innerHTML = ''; // Clear existing options
 
-    travelSelect.innerHTML = ''; // Clear previous options
+    const destinations = Object.keys(travelCosts[currentLocation]);
 
-    availableDestinations.forEach(destination => {
-        const cost = travelCosts[currentLocation][destination];
+    destinations.forEach(destination => {
         const option = document.createElement('option');
         option.value = destination;
-        option.innerText = `${destination} (Cost: ${cost} coins)`;
-        travelSelect.appendChild(option);
+        option.innerText = destination;
+        travelDestinationSelect.appendChild(option);
     });
-
-    // If no options available, notify the user
-    if (travelSelect.options.length === 0) {
-        travelSelect.innerHTML = `<option disabled>No destinations available</option>`;
-    }
 }
 
-// Travel to a selected location
-function travel() {
-    const travelSelect = document.getElementById('travel-destination');
-    const selectedDestination = travelSelect.value;
-    
-    if (!selectedDestination) return; // Ensure a destination is selected
+// handle traveling to the selected destination
+function travelToDestination() {
+    const destination = document.getElementById('travel-destination').value;
 
-    const travelCost = travelCosts[currentLocation][selectedDestination];
-    
+    if (!destination) {
+        alert('Please select a destination');
+        return;
+    }
+
+    const travelCost = travelCosts[currentLocation][destination];
+
     if (coins >= travelCost) {
-        // Deduct travel cost and update location
         coins -= travelCost;
-        const previousLocation = currentLocation;
-        currentLocation = selectedDestination;
-
-        logAction(`Traveled from ${previousLocation} to ${currentLocation} for ${travelCost} coins.`);
+        logAction(`Traveled from ${currentLocation} to ${destination} for ${travelCost} coins.`);
+        currentLocation = destination;
         updateStatus();
-        document.getElementById('current-location').innerText = `Current Location: ${currentLocation}`;
-
-        updateTravelOptions(); // Update travel options based on the new location
+        updateTravelOptions()
     } else {
-        logAction(`Not enough coins to travel to ${selectedDestination}.`);
+        alert('Invalid location.');
     }
 }
 
-// Update the status area with current information
+// update top area
 function updateStatus() {
     document.getElementById('coins').innerText = `Coins: ${coins}`;
     document.getElementById('current-ship').innerText = `Current Ship: ${currentShip}`;
+    document.getElementById('current-location').innerText = `Current Location: ${currentLocation}`;
     document.getElementById('inventory').innerText = `Inventory: ${inventory.join(', ')}`;
 }
 
-// Log actions to the feed
-function logAction(message) {
+// log actions to the feed
+function logAction(action) {
     const feed = document.getElementById('action-feed');
     const newAction = document.createElement('li');
-    newAction.innerText = message;
-    feed.appendChild(newAction);
+    newAction.innerText = action;
+    feed.insertBefore(newAction, feed.firstChild); // insert at top
 }
 
-// Event listener for travel button
-document.getElementById("travel-button").addEventListener('click', travel);
-
-// Initialize travel options and update UI on page load
-updateTravelOptions();
-
-// Initialize game UI
+// init game UI
 updateStatus();
+updateTravelOptions();
 updateBuyOptions();
 updateSellOptions();
+showTab('buy');

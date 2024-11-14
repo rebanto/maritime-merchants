@@ -16,14 +16,13 @@
             <div id="inventory">Inventory: Empty</div>
         </div>
         <button onclick="showMarketPricesPopup()">View Market Prices</button>
-        <button onclick="travel()">Travel</button>
         <button onclick="exitGame()">Exit</button>
-        <div id="output"></div>
 
         <div id="market-section">
             <div class="tabs">
-                <button id="buy-tab" class="tab-button active">Buy</button>
-                <button id="sell-tab" class="tab-button">Sell</button>
+                <button id="buy-tab" class="tab-button active" onclick="showTab('buy')">Buy</button>
+                <button id="sell-tab" class="tab-button" onclick="showTab('sell')">Sell</button>
+                <button id="travel-tab" class="tab-button" onclick="showTab('travel')">Travel</button>
             </div>
         
             <div id="buy-section" class="tab-content">
@@ -47,6 +46,13 @@
                 <input type="number" id="sell-amount" min="1">
                 <button id="sell-button">Sell</button>
             </div>
+
+            <!-- Travel Section (Will show when Travel tab is active) -->
+            <div id="travel-section" class="tab-content" style="display: none;">
+                <label for="travel-destination">Choose Destination:</label>
+                <select id="travel-destination"></select>
+                <button id="travel-button" onclick="travelToDestination()">Travel</button>
+            </div>
         </div>
 
     <!-- Feed Section -->
@@ -62,13 +68,6 @@
             <h2>Market Prices</h2>
             <div id="all-market-prices"></div>
         </div>
-    </div>
-
-    <div>
-        <h3>Select Travel Destination</h3>
-        <select id="travel-destination"></select>
-        <button id="travel-button">Travel</button>
-        <p id="current-location">Current Location: Portugal</p> <!-- Initially set to Portugal -->
     </div>
     
     <script src="script.js"></script>
