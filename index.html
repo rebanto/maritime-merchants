@@ -16,7 +16,6 @@
             <div id="inventory">Inventory: Empty</div>
         </div>
         <button onclick="showMarketPricesPopup()">View Market Prices</button>
-        <button onclick="exitGame()">Exit</button>
 
         <div id="market-section">
             <div class="tabs">
@@ -31,7 +30,6 @@
                 <h3>Buy Goods</h3>
                 <label for="buy-item">Item:</label>
                 <select id="buy-item">
-                    <!-- Options populated by JavaScript -->
                 </select>
                 <label for="buy-amount">Amount:</label>
                 <input type="number" id="buy-amount" min="1">
@@ -44,7 +42,6 @@
                 <h3>Sell Goods</h3>
                 <label for="sell-item">Item:</label>
                 <select id="sell-item">
-                    <!-- Options populated by JavaScript -->
                 </select>
                 <label for="sell-amount">Amount:</label>
                 <input type="number" id="sell-amount" min="1">
@@ -56,6 +53,7 @@
             <div id="travel-section" class="tab-content" style="display: none;">
                 <label for="travel-destination">Choose Destination:</label>
                 <select id="travel-destination"></select>
+                <div id="travel-preview" class="preview"></div>
                 <button id="travel-button" onclick="travelToDestination()">Travel</button>
             </div>
 
@@ -67,12 +65,12 @@
 
                 <h3>Available Upgrades</h3>
                 <ul id="shipUpgradesList">
-                    <!-- List of available ships will be populated by JavaScript -->
                 </ul>
 
-                <button id="upgradeButton">Upgrade Ship</button>
-                <p id="upgradeMessage"></p> <!-- Message displayed after upgrade attempt -->
+                <button id="upgradeButton" onclick="handleShipUpgrade()">Upgrade Ship</button>
+                <p id="upgradeMessage"></p>
             </div>
+
 
         </div>
 
