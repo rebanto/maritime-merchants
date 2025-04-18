@@ -192,7 +192,7 @@ function displayShipUpgrades() {
     document.getElementById("upgradeButton").disabled = false;
   } else {
     const li = document.createElement("li");
-    li.textContent = "No upgrades available. You already have the best ship!";
+    li.textContent = "No upgrades available - you already have the best ship!";
     shipUpgradesList.appendChild(li);
 
     document.getElementById("upgradeButton").disabled = true;
